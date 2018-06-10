@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 extension SearchViewController: URLSessionDownloadDelegate {
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
@@ -27,10 +28,10 @@ extension SearchViewController: URLSessionDownloadDelegate {
     do {
       try fileManager.copyItem(at: location, to: destinationURL)
       download?.track.downloaded = true
-      // play track right away
-      if let track = download?.track {
-        playDownload(track)
-      }
+//      // play track right away
+//      if let track = download?.track {
+//        playDownload(track)
+//      }
     } catch let error {
       print("Could not copy file to disk: \(error.localizedDescription)")
     }
@@ -62,4 +63,19 @@ extension SearchViewController: URLSessionDownloadDelegate {
       }
     }
   }
+}
+
+extension SearchViewController: URLSessionDelegate {
+  
+  // Standard background session handler
+  func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+    DispatchQueue.main.async {
+      if let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+        let completionHandler = appDelegate.backgroundSessionCompletionHandler {
+        appDelegate.backgroundSessionCompletionHandler = nil
+        completionHandler()
+      }
+    }
+  }
+  
 }
