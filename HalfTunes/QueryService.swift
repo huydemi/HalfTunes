@@ -39,15 +39,40 @@ class QueryService {
   var tracks: [Track] = []
   var errorMessage = ""
 
-  // TODO
+  // created a URLSession, and initialized it with a default session configuration
+  let defaultSession = URLSession(configuration: .default)
+  // declared a URLSessionDataTask variable, which you’ll use to make an HTTP GET request
+  var dataTask: URLSessionDataTask?
 
   func getSearchResults(searchTerm: String, completion: @escaping QueryResult) {
-    // TODO
-    DispatchQueue.main.async {
-      completion(self.tracks, self.errorMessage)
+    // For a new user query, you cancel the data task if it already exists, because you want to reuse the data task object for this new query.
+    dataTask?.cancel()
+    // include the user’s search string in the query URL
+    if var urlComponents = URLComponents(string: "https://itunes.apple.com/search") {
+      urlComponents.query = "media=music&entity=song&term=\(searchTerm)"
+      // url property of urlComponents might be nil, so you optional-bind it to url.
+      guard let url = urlComponents.url else { return }
+      // initialize a URLSessionDataTask with the query url and a completion handler to call when the data task completes
+      dataTask = defaultSession.dataTask(with: url) { data, response, error in
+        defer { self.dataTask = nil }
+        // If the HTTP request is successful, parses the response data into the tracks array
+        if let error = error {
+          self.errorMessage += "DataTask error: " + error.localizedDescription + "\n"
+        } else if let data = data,
+          let response = response as? HTTPURLResponse,
+          response.statusCode == 200 {
+          self.updateSearchResults(data)
+          // switch to the main queue to pass tracks to the completion handler
+          DispatchQueue.main.async {
+            completion(self.tracks, self.errorMessage)
+          }
+        }
+      }
+      // All tasks start in a suspended state by default; calling resume() starts the data task
+      dataTask?.resume()
     }
   }
-
+  
   fileprivate func updateSearchResults(_ data: Data) {
     var response: JSONDictionary?
     tracks.removeAll()
