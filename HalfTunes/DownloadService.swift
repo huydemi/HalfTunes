@@ -34,6 +34,8 @@ import Foundation
 // Allows cancel, pause, resume download.
 class DownloadService {
 
+  var activeDownloads: [URL: Download] = [:]
+  
   // SearchViewController creates downloadsSession
   var downloadsSession: URLSession!
 
