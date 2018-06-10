@@ -52,7 +52,8 @@ class SearchViewController: UIViewController {
   }
   
   lazy var downloadsSession: URLSession = {
-    let configuration = URLSessionConfiguration.default
+    //let configuration = URLSessionConfiguration.default
+    let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfiguration")
     return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
   }()
   
@@ -87,7 +88,8 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
     cell.delegate = self
 
     let track = searchResults[indexPath.row]
-    cell.configure(track: track, downloaded: track.downloaded)
+    cell.configure(track: track, downloaded: track.downloaded,
+                   download: downloadService.activeDownloads[track.previewURL])
 
     return cell
   }
