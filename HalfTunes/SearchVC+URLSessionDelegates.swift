@@ -27,6 +27,10 @@ extension SearchViewController: URLSessionDownloadDelegate {
     do {
       try fileManager.copyItem(at: location, to: destinationURL)
       download?.track.downloaded = true
+      // play track right away
+      if let track = download?.track {
+        playDownload(track)
+      }
     } catch let error {
       print("Could not copy file to disk: \(error.localizedDescription)")
     }
@@ -34,6 +38,27 @@ extension SearchViewController: URLSessionDownloadDelegate {
     if let index = download?.track.index {
       DispatchQueue.main.async {
         self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+      }
+    }
+  }
+  
+  func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                  didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
+                  totalBytesExpectedToWrite: Int64) {
+    // extract the URL of the provided downloadTask
+    // use it to find the matching Download in dictionary of active downloads
+    guard let url = downloadTask.originalRequest?.url,
+      let download = downloadService.activeDownloads[url]  else { return }
+    // calculate the progress
+    download.progress = Float(totalBytesWritten) / Float(totalBytesExpectedToWrite)
+    // generates a human-readable string showing the total download file size
+    let totalSize = ByteCountFormatter.string(fromByteCount: totalBytesExpectedToWrite, countStyle: .file)
+    // find the cell responsible for displaying the Track
+    // update its progress view and progress label
+    DispatchQueue.main.async {
+      if let trackCell = self.tableView.cellForRow(at: IndexPath(row: download.track.index,
+                                                                 section: 0)) as? TrackCell {
+        trackCell.updateDisplay(progress: download.progress, totalSize: totalSize)
       }
     }
   }
